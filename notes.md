@@ -465,7 +465,13 @@ Tools:
 
 `options(error=recover)` stays live for the session.
 
+Use `system.time` to time expressions.
+
+`Rprof()`/`Rprof(NULL)`. `summaryRprof()` for summary. Sample interval is 0.02 seconds. C/Fortran code is *not* profiled.
+
 ### Misc
+
+Clear the current environment with `rm(list=ls())`.
 
 `str` vs `summary`.
 
@@ -484,6 +490,8 @@ Tools:
  $ Day    : int  1 2 3 4 5 6 7 8 9 10 ...
 ```
 
+`seq` can take either a `by` arg for increment size or `length` (it'll work out the increment itself).
+
 ### Random numbers
 
  * `rnorm` - N(mu, sigma)
@@ -491,10 +499,97 @@ Tools:
  * `pnorm` - cumulative
  * `rpois` - Poisson at given rate
 
-Nomenclature:
- * `d`: density
+Nomenclature:ty
  * `r`: random (sample from)
  * `p`: cumulative
  * `q`: quantile
 
 `sample`, `replace=T` for replacement.
+
+### MySQL
+
+```R
+> library(RMySQL)
+Loading required package: DBI
+> ucscDb <- dbConnect(MySQL(),user="genome",host="genome-mysql.cse.ucsc.edu")
+> result <- dbGetQuery(ucscDb,"show databases;")
+> dbDisconnect(ucscDb)
+[1] TRUE
+```
+You can do some basic SQL metadata queries too:
+
+```R
+> hg19 <- dbConnect(MySQL(fetch.default.rec = 10), user="genome", db="hg19", host="genome-mysql.cse.ucsc.edu")
+> dbListFields(hg19, "affyU133Plus2")
+ [1] "bin"         "matches"     "misMatches"  "repMatches"  "nCount"      "qNumInsert" 
+ [7] "qBaseInsert" "tNumInsert"  "tBaseInsert" "strand"      "qName"       "qSize"      
+[13] "qStart"      "qEnd"        "tName"       "tSize"       "tStart"      "tEnd"       
+[19] "blockCount"  "blockSizes"  "qStarts"     "tStarts" 
+```
+
+Read in a whole table with `dbReadTable`, or from a SQL query:
+
+```R
+> hg19 <- dbConnect(MySQL(fetch.default.rec = 10), user="genome", db="hg19", host="genome-mysql.cse.ucsc.edu")
+> q <- dbSendQuery(hg19, "select * from affyU133Plus2 where misMatches between 1 and 3")
+There were 16 warnings (use warnings() to see them)
+> a <- fetch(q)
+> typeof(a)
+[1] "list"
+> length(a)
+[1] 22
+> a$bin
+ [1] 585 586  73 587 587 587 588 588 589 589
+> a2 <- fetch(q)
+> a2$bin
+ [1] 589 590 590 590  73 590 590 591 591 591
+> length(a$bin)
+[1] 10
+```
+
+So you need to fetch continuously until the data has been exhausted.
+
+### HDF5
+
+```R
+> library(rhdf5)
+> c = h5createFile("container.h5")
+> h5createGroup("container.h5","foo")
+[1] TRUE
+> h5createGroup("container.h5","bar")
+[1] TRUE
+> h5createGroup("container.h5","foo/foobaa")
+[1] TRUE
+> h5ls()
+Error in h5checktypeOrOpenLoc(file, readonly = TRUE, native = native) : 
+  argument "file" is missing, with no default
+> h5ls("container.h5")
+  group   name     otype dclass dim
+0     /    bar H5I_GROUP           
+1     /    foo H5I_GROUP           
+2  /foo foobaa H5I_GROUP           
+> h5write(1:10, "container.h5", "foo/A")
+> h5ls("container.h5")
+  group   name       otype  dclass dim
+0     /    bar   H5I_GROUP            
+1     /    foo   H5I_GROUP            
+2  /foo      A H5I_DATASET INTEGER  10
+3  /foo foobaa   H5I_GROUP
+```
+
+And `h5read` to read it back - supports indexing to read a subset. `h5write` can also write a particular index - e.g. a set of columns/rows.
+
+### HTML
+
+Via the `httr` library + `htmlParse`. It supports authentication - use `handle` to essentially create and re-use sessions.
+03JAN1990     23.4-0.4     25.1-0.3     26.6 0.0     28.6 0.3
+
+### Files
+
+Wrappers around OS functionality: `file.create,file.rename,file.copy,file.exists` ... Set `recursive=T` to create nested directorys with `dir.create`.
+
+You can check file attributes with `file.info`.
+
+Can use `download.file` to store it somewhere (e.g. with `tempfile()` to generate a random filename) or `url`, which seems to fetch the contents - can be used as an argument to the likes of `read.csv` etc...
+
+There are libraries for XML and JSON - but it's not part of the core language.  
