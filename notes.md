@@ -490,7 +490,33 @@ Clear the current environment with `rm(list=ls())`.
  $ Day    : int  1 2 3 4 5 6 7 8 9 10 ...
 ```
 
-`seq` can take either a `by` arg for increment size or `length` (it'll work out the increment itself).
+`seq` can take either a `by` arg for increment size or `length` (it'll work out the increment itself). 	`along.with` to get a vector the same size as the argument.
+
+Use `which` to remove missing values - e.g. `X[which(X$foo > 2),]`.
+
+`table`, with `useNA="ifany"` is a good way to summarise (count) data per occurrence.
+
+Use `xtabs` to break something down by specific components:
+
+```R
+> data("UCBAdmissions")
+> DF = as.data.frame(UCBAdmissions)
+> names(DF)
+[1] "Admit"  "Gender" "Dept"   "Freq"  
+> xtabs(Freq ~ Gender + Admit, data=DF)
+        Admit
+Gender   Admitted Rejected
+  Male       1198     1493
+  Female      557     1278
+```
+
+`object.size` returns bytes, use something like `print(object.size(foo), units="Mb")` for something more readable.
+
+You can easily add binary variables to dataframes via `ifelse`.
+
+`library(Hmisc)` has a `cut2` function that buckets variables.
+
+`unlist` to turn a list into a vector (where possible).
 
 ### Random numbers
 
@@ -593,3 +619,51 @@ You can check file attributes with `file.info`.
 Can use `download.file` to store it somewhere (e.g. with `tempfile()` to generate a random filename) or `url`, which seems to fetch the contents - can be used as an argument to the likes of `read.csv` etc...
 
 There are libraries for XML and JSON - but it's not part of the core language.  
+
+### `dplyr`
+
+Verbs:
+ * `select`
+ * `filter`
+ * `arrange` - pass in `desc(var)` to change order
+ * `rename`
+ * `mutate`
+ * `summarise`
+ * `print`
+
+First argument is always the dataframe.
+
+### Text manipulation
+
+`toupper` and `tolower` to standardise case.
+
+```R
+> strsplit(c("ab","c.d","ef"), "\\.")
+[[1]]
+[1] "ab"
+
+[[2]]
+[1] "c" "d"
+
+[[3]]
+[1] "ef"
+```
+
+Can process with `sapply`: `sapply(strsplit(c("ab","c.d","ef"), "\\."), function(x) {x[1]})`
+
+
+Text substitution with `sub`: `sub("_", "", c("ab_cd","_def"))` - but it only replaces the first occurrence. Use `gsub` for all occurrences.
+
+To find text in data, `grep` and `grepl` (indexs & logical vector respectively). Use `value=TRUE` to return the values instead of the indexes.
+
+Other fns include `paste` to join, `substr` and `nchar` (self-descriptive). `str_trim` is part of the `stringr` library.
+
+#### RegExp
+
+Use `^` to negate. E.g. `[^?.]$` will match any line that does *not* end in a full stop or question mark. Use `( )` for subexpressions.
+
+`?` is optional - `[Gg]eorge( [Ww]\.)? [Bb]ush`. Use `{2,4}` to specify the min/max number of matches (2 and 4 respectively in this example). If only one number is specified it's an exact match (e.g. exactly 3 times), or `{n,}` means at least n times.
+
+Use `\1`, `\2`, ... to match sections in parenthesis.
+
+RegExp are greedy - can turn this off with `*?` somehow.
