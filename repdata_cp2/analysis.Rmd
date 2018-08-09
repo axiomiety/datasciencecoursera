@@ -1,0 +1,61 @@
+---
+title: 'Exploring the NOAA Storm Database to better understand the impact of severe weather events'
+author: "Pierre"
+date: "8/9/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, root.dir="C:/shared/datasciencecoursera/repdata_cp2")
+```
+
+## Synopsis
+
+10 sentences (at most) to describe and summarise the analysis.
+
+## Data Processing
+
+We first start by downloading the raw `.csv.bz2` file from the location indicated in our brief:
+
+```{r init, cache=TRUE}
+filename <- "repdata_activity.csv.bz2"
+downloadData <- function() {
+  if (!file.exists(filename)) {
+    dataUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+    download.file(dataUrl, filename)
+  } else {
+    print("file already exists, will not download again")
+  }
+}
+
+downloadData()
+data <- read.csv(filename)
+```
+
+The data frame loaded consists of 902297 observations composed of 37 columns:
+
+```{r str_data}
+str(data)
+```
+
+We see that certain columns don't necessarily have the correct data types. For instance `BGN_DATE` is a Factor variable. 
+
+TODO: if we don't care about the date should we convert it? Would it help to have some sort of panel plot?
+
+Damage columns - need to expand the K,M,B.
+
+From a frequency perspective, we're told more recent data is generally more accurate vs old data. Do we weigh that in?
+
+## Results
+
+### Across the United States, which types of events are most harmful to population health?
+
+In order to answer this question fully we need to consider not only direct fatalities and injuries, but also indirect fatalities and injuries as well as delayed fatalities (such as exessive heat episodes during which individuals never recover from the initial effects of the heat wave).
+
+What about injuries - do we weight them to something like $\frac{1}{10}$ of a death?
+
+### Across the United States, which types of events have the greatest economic consequences?
+
+A weather event can multiple economic impacts. It can range from an individual's property, crop damage, debris removal, ... to damage that occurs after a few days, such as a heavy snowfall's impact on roofs post event.
+
+
