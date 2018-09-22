@@ -1,0 +1,134 @@
+---
+title: "Regression Models - Course Project"
+author: "Pierre"
+date: "9/21/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview
+
+In this report we investigate fuel consumption differences between manual and automatic cars. The data used is from the `mtcars` dataset, which "was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973-74 models)."
+
+## Setup
+
+This report was produced using the `knitr` package. We provide the below for reproducibility:
+
+```{r info}
+sessionInfo()
+```
+
+## Exploratory Data Analysis
+
+Let's take a quick look at the data:
+
+```{r summary}
+library(datasets)
+str(mtcars)
+```
+
+The 11 numeric variables are defined as per the below:
+
+ * mpg	Miles/(US) gallon
+ * cyl	Number of cylinders
+ * disp	Displacement (cu.in.)
+ * hp	Gross horsepower
+ * drat	Rear axle ratio
+ * wt	Weight (1000 lbs)
+ * qsec	1/4 mile time
+ * vs	Engine (0 = V-shaped, 1 = straight)
+ * am	Transmission (0 = automatic, 1 = manual)
+ * gear	Number of forward gears
+ * carb	Number of carburetors
+
+We use a boxplot to explore the distribution of `mpg` versus the transmission type:
+
+```{r boxplot}
+library(ggplot2)
+g <- ggplot(mtcars, aes(x=as.factor(am), y=mpg, fill=as.factor(am))) +
+  geom_boxplot() +
+  labs(y='MPG', x='Transmission',title='Box plot of MPG vs Transmission Type') +
+  scale_fill_discrete(name='Transmission',
+                      breaks=c(0,1),
+                      labels=c('Automatic','Manual')) +
+  theme(plot.title = element_text(hjust = 0.5)) # to center the title
+print(g)
+```
+
+## Is an automatic or manual transmission better for MPG
+
+The boxplot above would indicate manual transmission to be better but let us be more formal about it. We perform a two-sample t-test with null hypothesis being that there is no difference in MPG between automatic and manual transmissions.
+
+```{r t-test}
+t.test(mtcars$mpg ~ mtcars$am)
+```
+
+0 is not within the 95% confidence interval, causing us to reject the null hypothsis - that is, the difference in average MPG is between each group is statistically significant.
+
+We also see from the above that the mean from Group 1 (manual) is significantly higher. Our conclusion is therefore that based on our dataset, manual transmissions are better for MPG.
+
+## Quantify the MPG difference between automatic and manual transmissions
+
+We start by creating a simple linear model regression transmission onto MPG:
+
+```{r lm1}
+fit <- lm(mpg ~ factor(am), mtcars)
+summary(fit)
+```
+
+Note the esimate for the intercept is nothing more than the mean MPG for automatic cars. The coefficient for `am` is the difference in mean MPG between automatic and manual transmissions and the p-value shows this is statistically significant. However the R-squared value indicates this only accounts for 36% of the variation. What about other variables? How do they impact MPG?
+
+```{r fit2}
+fit_all <- lm(mpg~., mtcars)
+summary(fit_all)
+```
+
+We now account for 87%. However none of the regressors seem to be statistically significant. Could we have collinearility? In other words, is there excessive correlation among some of those variables? We calculate VIF below to find out.
+
+```{r vif}
+library(car)
+vif(fit_all)
+```
+
+And clearly some variables are more correlated than others. Looking back at the previous model, let's exclude top 3 variables with the largest p-values, `cyl`,`vs` and `carb`.
+
+```{r fit3}
+fit3 <- lm(mpg ~ . -cyl-vs-carb, mtcars)
+summary(fit3)
+```
+This looks better. Let's try again, this time removing `gear`, `drat` and `disp` :
+
+```{r fit4}
+fit4 <- lm(mpg ~ hp + wt + qsec + as.factor(am) + gear, mtcars)
+summary(fit4)
+```
+Which suggests `gear` is actually not required, and perhaps `hp`:
+
+```{r fit5}
+fit5 <- lm(mpg ~ wt + qsec + as.factor(am), mtcars)
+summary(fit5)
+```
+
+We have now explained 85% of the variation with 3 variables, all of which are statistically significant. Let's ensure there is no collinearity:
+
+```{r vif_final}
+vif(fit5)
+```
+
+All of those are less than 5 suggesting there are relatively independent. What's left is to investigate whether there are any patterns in the residuals:
+
+```{r residuals}
+par(mfrow=c(2,2))
+plot(fit5)
+```
+
+The "Residuals vs Fitted" plot indicates there might be some non-linear relationship which was not explained in the model. The QQ plot shows most of the observations falling on a straight line with a few outliers. The Scale-Location plot also indicates there might not be homoscedasticity (equal variance) among the predictors. This doesn't mean our model can't be useful but that there might be some relationships we haven't captured.
+
+### Conclusion
+
+Our final model indicates that keeping `wt` (weight) and `qsec` (quarter-mile time) constant, the difference between automatic and manual transmission accounts for 3 MPG.
