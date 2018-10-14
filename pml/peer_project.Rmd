@@ -7,6 +7,11 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(Hmisc)
+library(e1071)
+library(caret)
+library(randomForest)
 ```
 
 ## Overview
@@ -42,7 +47,6 @@ We notice that a number of variables are primarily NA.
 
 ```{r cleantr}
 # first 7 columns are user-related, the last one is the class we're looking to predict
-library(dplyr)
 tr <- training[, seq(8,160)]
 num_na <- lapply(tr, function(c) { sum(is.na(c))})
 print(sum(num_na > 19200))
@@ -53,7 +57,6 @@ print(dim(clean_tr))
 Excluding variables that are over 98% NA, we end up with 53. This is still quite high so let's see which ones are highly correlated.
 
 ```{r corr}
-library(Hmisc)
 corrM <- rcorr(as.matrix(clean_tr[,-53]))
 m <- as.matrix(corrM$r)
 diag(m) <- 0 # as each variable is perfectly correlated with itself
@@ -72,7 +75,6 @@ dim(final_tr)
 Now that we have a cleaner data set, let's build a couple of models but first, we separate our training set into 2, with 30% of the observations going into testing.
 
 ```{r pre}
-library(caret)
 set.seed(1778)
 inTrain <- createDataPartition(y=final_tr$classe,
                               p=0.7, list=FALSE)
@@ -82,7 +84,6 @@ te <- final_tr[-inTrain,]
 ```
 
 ```{r model_rpart}
-library(caret)
 model_rpart <- train(classe~., data=tr, method="rpart")
 p_rpart <- predict(model_rpart, te)
 cm_rpart <- confusionMatrix(p_rpart, te$classe)
@@ -92,10 +93,9 @@ cm_rpart$table
 
 The `rpart` model (recursive partition) performed poorly, with an accuracy of only 49%.
 
-Let's try using `svmRadial` for Support Vector Machines.
+Let's try using `svm` for Support Vector Machines.
 
 ```{r model_svm}
-library(e1071)
 model_svm <- svm(classe~., data=tr)
 #model_svm <- train(classe~., data=tr, method="svmRadial")
 p_svm <- predict(model_svm, te)
@@ -107,13 +107,12 @@ cm_svm$table
 We can see that Support Vector Machines did a great job at differentiating the classes, with an accuracy of 94%. But can we do better?
 
 ```{r model_rf}
-library(randomForest)
 # using caret's `train` with `method='rf'` takes too long for some reason
 model_rf <- randomForest(classe ~ ., data=tr, importance=T, ntree=100)
 p_rf <- predict(model_rf, te)
-cm_svm <- confusionMatrix(p_rf, te$classe)
-print(cm_svm$overall['Accuracy'])
-cm_svm$table
+cm_rf <- confusionMatrix(p_rf, te$classe)
+print(cm_rf$overall['Accuracy'])
+cm_rf$table
 ```
 
 The RandomForest gives us an accuracy of 99.5%, even higher than SVM. This means there is little point using model stacking and we can use this as our final model.

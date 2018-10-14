@@ -338,11 +338,39 @@ $(document).ready(function () {
 ## attached base packages:
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
+## other attached packages:
+## [1] randomForest_4.6-14 caret_6.0-80        e1071_1.7-0        
+## [4] Hmisc_4.1-1         ggplot2_2.2.1       Formula_1.2-3      
+## [7] survival_2.41-3     lattice_0.20-35     dplyr_0.7.5        
+## 
 ## loaded via a namespace (and not attached):
-##  [1] compiler_3.5.0  backports_1.1.2 magrittr_1.5    rprojroot_1.3-2
-##  [5] tools_3.5.0     htmltools_0.3.6 yaml_2.1.19     Rcpp_0.12.17   
-##  [9] stringi_1.1.7   rmarkdown_1.10  knitr_1.20      stringr_1.3.1  
-## [13] digest_0.6.15   evaluate_0.11</code></pre>
+##  [1] Rcpp_0.12.17        ddalpha_1.3.4       DRR_0.0.3          
+##  [4] bindr_0.1.1         knitr_1.20          magrittr_1.5       
+##  [7] cluster_2.0.7-1     MASS_7.3-49         magic_1.5-9        
+## [10] sfsmisc_1.1-2       splines_3.5.0       tidyselect_0.2.4   
+## [13] colorspace_1.3-2    R6_2.2.2            rlang_0.2.1        
+## [16] foreach_1.4.4       geometry_0.3-6      broom_0.5.0        
+## [19] latticeExtra_0.6-28 withr_2.1.2         gower_0.1.2        
+## [22] iterators_1.0.10    htmltools_0.3.6     class_7.3-14       
+## [25] recipes_0.1.3       CVST_0.2-2          assertthat_0.2.0   
+## [28] abind_1.4-5         rprojroot_1.3-2     digest_0.6.15      
+## [31] tibble_1.4.2        Matrix_1.2-14       acepack_1.4.1      
+## [34] rmarkdown_1.10      compiler_3.5.0      DEoptimR_1.0-8     
+## [37] pillar_1.2.3        pls_2.7-0           scales_0.5.0       
+## [40] backports_1.1.2     stats4_3.5.0        lubridate_1.7.4    
+## [43] pkgconfig_2.0.1     rstudioapi_0.7      munsell_0.5.0      
+## [46] RcppRoll_0.3.0      prodlim_2018.04.18  plyr_1.8.4         
+## [49] stringr_1.3.1       tools_3.5.0         ipred_0.9-7        
+## [52] grid_3.5.0          nnet_7.3-12         dimRed_0.1.0       
+## [55] nlme_3.1-137        htmlTable_1.12      timeDate_3043.102  
+## [58] data.table_1.11.4   gtable_0.2.0        checkmate_1.8.5    
+## [61] lazyeval_0.2.1      yaml_2.1.19         bindrcpp_0.2.2     
+## [64] lava_1.6.3          gridExtra_2.3       kernlab_0.9-27     
+## [67] purrr_0.2.5         tidyr_0.8.1         reshape2_1.4.3     
+## [70] RColorBrewer_1.1-2  ModelMetrics_1.2.0  codetools_0.2-15   
+## [73] htmlwidgets_1.2     base64enc_0.1-3     rpart_4.1-13       
+## [76] glue_1.2.0          evaluate_0.11       robustbase_0.93-3  
+## [79] stringi_1.1.7       foreign_0.8-70</code></pre>
 </div>
 <div id="exploratory-data-analysis-features-reduction" class="section level2">
 <h2>Exploratory Data Analysis &amp; Features Reduction</h2>
@@ -362,16 +390,7 @@ print(dim(training))</code></pre>
 <p>The first 7 variables are more booking-keeping related than actual measurements from the sensors, though the time component could be import but we’ll ignore it for now. The last variabe, <code>classe</code>, is the one we’re looking to predict.</p>
 <p>We notice that a number of variables are primarily NA.</p>
 <pre class="r"><code># first 7 columns are user-related, the last one is the class we're looking to predict
-library(dplyr)</code></pre>
-<pre><code>## 
-## Attaching package: 'dplyr'</code></pre>
-<pre><code>## The following objects are masked from 'package:stats':
-## 
-##     filter, lag</code></pre>
-<pre><code>## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union</code></pre>
-<pre class="r"><code>tr &lt;- training[, seq(8,160)]
+tr &lt;- training[, seq(8,160)]
 num_na &lt;- lapply(tr, function(c) { sum(is.na(c))})
 print(sum(num_na &gt; 19200))</code></pre>
 <pre><code>## [1] 100</code></pre>
@@ -379,20 +398,6 @@ print(sum(num_na &gt; 19200))</code></pre>
 print(dim(clean_tr))</code></pre>
 <pre><code>## [1] 19622    53</code></pre>
 <p>Excluding variables that are over 98% NA, we end up with 53. This is still quite high so let’s see which ones are highly correlated.</p>
-<pre class="r"><code>library(Hmisc)</code></pre>
-<pre><code>## Warning: package 'Hmisc' was built under R version 3.5.1</code></pre>
-<pre><code>## Loading required package: lattice</code></pre>
-<pre><code>## Loading required package: survival</code></pre>
-<pre><code>## Loading required package: Formula</code></pre>
-<pre><code>## Loading required package: ggplot2</code></pre>
-<pre><code>## 
-## Attaching package: 'Hmisc'</code></pre>
-<pre><code>## The following objects are masked from 'package:dplyr':
-## 
-##     src, summarize</code></pre>
-<pre><code>## The following objects are masked from 'package:base':
-## 
-##     format.pval, units</code></pre>
 <pre class="r"><code>corrM &lt;- rcorr(as.matrix(clean_tr[,-53]))
 m &lt;- as.matrix(corrM$r)
 diag(m) &lt;- 0 # as each variable is perfectly correlated with itself
@@ -428,21 +433,13 @@ dim(final_tr)</code></pre>
 <div id="model-training" class="section level2">
 <h2>Model training</h2>
 <p>Now that we have a cleaner data set, let’s build a couple of models but first, we separate our training set into 2, with 30% of the observations going into testing.</p>
-<pre class="r"><code>library(caret)</code></pre>
-<pre><code>## Warning: package 'caret' was built under R version 3.5.1</code></pre>
-<pre><code>## 
-## Attaching package: 'caret'</code></pre>
-<pre><code>## The following object is masked from 'package:survival':
-## 
-##     cluster</code></pre>
 <pre class="r"><code>set.seed(1778)
 inTrain &lt;- createDataPartition(y=final_tr$classe,
                               p=0.7, list=FALSE)
 final_tr$classe &lt;- as.factor(final_tr$classe)
 tr &lt;- final_tr[inTrain,]
 te &lt;- final_tr[-inTrain,]</code></pre>
-<pre class="r"><code>library(caret)
-model_rpart &lt;- train(classe~., data=tr, method=&quot;rpart&quot;)
+<pre class="r"><code>model_rpart &lt;- train(classe~., data=tr, method=&quot;rpart&quot;)
 p_rpart &lt;- predict(model_rpart, te)
 cm_rpart &lt;- confusionMatrix(p_rpart, te$classe)
 print(cm_rpart$overall['Accuracy'])</code></pre>
@@ -457,14 +454,7 @@ print(cm_rpart$overall['Accuracy'])</code></pre>
 ##          D    0    0    0    0    0
 ##          E    4    0    0    0  464</code></pre>
 <p>The <code>rpart</code> model (recursive partition) performed poorly, with an accuracy of only 49%.</p>
-<p>Let’s try using <code>svmRadial</code> for Support Vector Machines.</p>
-<pre class="r"><code>library(e1071)</code></pre>
-<pre><code>## Warning: package 'e1071' was built under R version 3.5.1</code></pre>
-<pre><code>## 
-## Attaching package: 'e1071'</code></pre>
-<pre><code>## The following object is masked from 'package:Hmisc':
-## 
-##     impute</code></pre>
+<p>Let’s try using <code>svm</code> for Support Vector Machines.</p>
 <pre class="r"><code>model_svm &lt;- svm(classe~., data=tr)
 #model_svm &lt;- train(classe~., data=tr, method=&quot;svmRadial&quot;)
 p_svm &lt;- predict(model_svm, te)
@@ -481,26 +471,14 @@ print(cm_svm$overall['Accuracy'])</code></pre>
 ##          D    0    1   11  871   24
 ##          E    0    3    0    1 1023</code></pre>
 <p>We can see that Support Vector Machines did a great job at differentiating the classes, with an accuracy of 94%. But can we do better?</p>
-<pre class="r"><code>library(randomForest)</code></pre>
-<pre><code>## Warning: package 'randomForest' was built under R version 3.5.1</code></pre>
-<pre><code>## randomForest 4.6-14</code></pre>
-<pre><code>## Type rfNews() to see new features/changes/bug fixes.</code></pre>
-<pre><code>## 
-## Attaching package: 'randomForest'</code></pre>
-<pre><code>## The following object is masked from 'package:ggplot2':
-## 
-##     margin</code></pre>
-<pre><code>## The following object is masked from 'package:dplyr':
-## 
-##     combine</code></pre>
 <pre class="r"><code># using caret's `train` with `method='rf'` takes too long for some reason
 model_rf &lt;- randomForest(classe ~ ., data=tr, importance=T, ntree=100)
 p_rf &lt;- predict(model_rf, te)
-cm_svm &lt;- confusionMatrix(p_rf, te$classe)
-print(cm_svm$overall['Accuracy'])</code></pre>
+cm_rf &lt;- confusionMatrix(p_rf, te$classe)
+print(cm_rf$overall['Accuracy'])</code></pre>
 <pre><code>##  Accuracy 
 ## 0.9957519</code></pre>
-<pre class="r"><code>cm_svm$table</code></pre>
+<pre class="r"><code>cm_rf$table</code></pre>
 <pre><code>##           Reference
 ## Prediction    A    B    C    D    E
 ##          A 1672    7    1    0    0
