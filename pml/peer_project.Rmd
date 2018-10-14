@@ -1,0 +1,126 @@
+---
+title: "Prediction Assignment Writeup"
+author: "Pierre"
+date: "10/13/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview
+
+The aim of this project is, given a set of measurements, to decide whether an individual is doing the Unilateral Dumbbell Bicep curle exercise correctly and if not, what might need to be rectified.
+
+The data was provided from: <http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har>
+
+Quoting from the above, "Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).". Our goal is therefore to decide which class a particular movement falls in.
+
+## Setup
+
+This report was produced using the `knitr` package. We provide the below for reproducibility:
+
+```{r info}
+sessionInfo()
+```
+
+## Exploratory Data Analysis & Features Reduction
+
+Let's take a look at the data:
+
+```{r edl}
+#training <- read.csv('pml-training.csv', na.strings = c('NA','#DIV/0!'))
+training <- read.table('pml-training.csv', na.strings = c("NA","#DIV/0!"), sep=",", stringsAsFactors = F, header=T)
+print(dim(training))
+head(colnames(training),n=20)
+```
+
+The first 7 variables are more booking-keeping related than actual measurements from the sensors, though the time component could be import but we'll ignore it for now. The last variabe, `classe`, is the one we're looking to predict.
+
+We notice that a number of variables are primarily NA.
+
+```{r cleantr}
+# first 7 columns are user-related, the last one is the class we're looking to predict
+library(dplyr)
+tr <- training[, seq(8,160)]
+num_na <- lapply(tr, function(c) { sum(is.na(c))})
+print(sum(num_na > 19200))
+clean_tr <- tr %>% select(-which( num_na > 19200))
+print(dim(clean_tr))
+```
+
+Excluding variables that are over 98% NA, we end up with 53. This is still quite high so let's see which ones are highly correlated.
+
+```{r corr}
+library(Hmisc)
+corrM <- rcorr(as.matrix(clean_tr[,-53]))
+m <- as.matrix(corrM$r)
+diag(m) <- 0 # as each variable is perfectly correlated with itself
+which(m > 0.90 | m < -0.90, arr.ind = T)
+```
+
+There are a number of variables that are very highly correlated (positively or negatively). We'll exclude the following column indexes: `c(4,9,10,8,19,33,46)`
+
+```{r finaltr}
+final_tr <- clean_tr[,-c(4,9,10,8,19,33,46)]
+dim(final_tr)
+```
+
+## Model training
+
+Now that we have a cleaner data set, let's build a couple of models but first, we separate our training set into 2, with 30% of the observations going into testing.
+
+```{r pre}
+library(caret)
+set.seed(1778)
+inTrain <- createDataPartition(y=final_tr$classe,
+                              p=0.7, list=FALSE)
+final_tr$classe <- as.factor(final_tr$classe)
+tr <- final_tr[inTrain,]
+te <- final_tr[-inTrain,]
+```
+
+```{r model_rpart}
+library(caret)
+model_rpart <- train(classe~., data=tr, method="rpart")
+p_rpart <- predict(model_rpart, te)
+cm_rpart <- confusionMatrix(p_rpart, te$classe)
+print(cm_rpart$overall['Accuracy'])
+cm_rpart$table
+```
+
+The `rpart` model (recursive partition) performed poorly, with an accuracy of only 49%.
+
+Let's try using `svmRadial` for Support Vector Machines.
+
+```{r model_svm}
+library(e1071)
+model_svm <- svm(classe~., data=tr)
+#model_svm <- train(classe~., data=tr, method="svmRadial")
+p_svm <- predict(model_svm, te)
+cm_svm <- confusionMatrix(p_svm, te$classe)
+print(cm_svm$overall['Accuracy'])
+cm_svm$table
+```
+
+We can see that Support Vector Machines did a great job at differentiating the classes, with an accuracy of 94%. But can we do better?
+
+```{r model_rf}
+library(randomForest)
+# using caret's `train` with `method='rf'` takes too long for some reason
+model_rf <- randomForest(classe ~ ., data=tr, importance=T, ntree=100)
+p_rf <- predict(model_rf, te)
+cm_svm <- confusionMatrix(p_rf, te$classe)
+print(cm_svm$overall['Accuracy'])
+cm_svm$table
+```
+
+The RandomForest gives us an accuracy of 99.5%, even higher than SVM. This means there is little point using model stacking and we can use this as our final model.
+
+We then classify our testing observations as below:
+
+```{r classify}
+testing <- read.table('pml-testing.csv', na.strings = c("NA","#DIV/0!"), sep=",", stringsAsFactors = F, header=T)
+predict(model_rf, testing)
+```
