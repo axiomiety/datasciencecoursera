@@ -19,7 +19,7 @@ sampleFile <- function(fileName, newFileName, threshold) {
   print(paste('read',linesRead,'out of',totalLines,'lines from',fileName,'into',newFileName))
 }
 
-threshold = 0.005 #0.5%
+threshold = 0.10 # 10%
 
 sampleAll <- function () {
   

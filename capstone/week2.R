@@ -10,7 +10,7 @@ docs <- tm_map(docs, content_transformer(stripWhitespace))
 docs <- tm_map(docs, content_transformer(removeNumbers))
 
 tdm <- TermDocumentMatrix(docs)
-m <- as.matrix(dtm)
+#m <- as.matrix(dtm)
 #v <- sort(rowSums(m),decreasing=TRUE)
 #d <- data.frame(word = names(v),freq=v)
 
@@ -22,9 +22,11 @@ NgramTokenizer <- function(x, n) {
 
 BigramTokenizer <- function(x) {NgramTokenizer(x, 2)}
 TrigramTokenizer <- function(x) {NgramTokenizer(x, 3)}
+QuadgramTokenizer <- function(x) {NgramTokenizer(x, 4)}
 
 tdm_bi <- TermDocumentMatrix(docs, control = list(tokenize = BigramTokenizer))
 tdm_tri <- TermDocumentMatrix(docs, control = list(tokenize = TrigramTokenizer))
+tdm_qua <- TermDocumentMatrix(docs, control = list(tokenize = QuadgramTokenizer))
 
 foo <- function() {
 library("tm")
