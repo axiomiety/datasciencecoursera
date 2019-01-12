@@ -4,26 +4,25 @@ author: Pierre
 date: 2019-01-11
 autosize: true
 
-Problem statement
+Problem, Model & Caveats
 ========================================================
 
-Given a handful of words, we wish to predict
+Given a sequence of words, we want to suggest the next one.
 
-Model
-========================================================
+We make use of the  [Stupid Backoff Model](http://www.aclweb.org/anthology/D07-1090.pdf), which is built around frequency tables and attaches more importance to prefixes of longer length.
 
-The model used is the [Stupid Backoff](http://www.aclweb.org/anthology/D07-1090.pdf)
+```{r, echo=FALSE, results='asis'}
+library(knitr)
+library(kableExtra)
+df2 <- data.frame(prefix=c('will see you next','see you next'),
+                  word=c('week','time'),
+                  count=c('110','138'),
+                  score=c('0.295','0.108'))
+kable(df2) %>% kable_styling(position = "center")
+```
 
-Accuracy
-========================================================
+Due to speed and memory constraints, we limit ourselves to prefixes of length 3.
 
-To assess the (in-sample) accuracy of our model, we sampled the original data files and looked at lines containing more than 3 words.
-
-Each sentence was:
- - split at a random offset $i$
- - $w_0:w_i$ were fed to the algorithm
- - if $w_{i+1}$ was one of the 3 suggestions returned, this was classified as a match.
- 
 Accuracy and Results
 ========================================================
 
@@ -42,11 +41,22 @@ df2 <- data.frame(row.names=c('blogs','news','twitter','average'),
 kable(df2) %>% kable_styling(position = "center")
 ```
 
-Data Product
+Data Product (1)
 ========================================================
 
-https://axiomiety.shinyapps.io/DataProduct/
+The app is located at: https://axiomiety.shinyapps.io/DataProduct/
 
-```{r echo=FALSE, out.width='90%'}
-knitr::include_graphics('./data_product_ss.jpg')
+Type a sentence in the search box and press "Suggest". Choices (up to the maximum number selected, in this case 4) will appear in the drop-down.
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('./data_product_user_input.jpg')
+```
+
+Data Product (2)
+========================================================
+
+The "Peek under the hood" tab highlights some of the internals used by the algorithm, namely its frequency table with pre-computed scores from the corpus.
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('./data_product_under_the_hood.jpg')
 ```
