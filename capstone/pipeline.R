@@ -125,8 +125,8 @@ suggest <- function(sentence) {
     res <- dt[root==root_quadgram]
     suggestions <- rbind(suggestions,res)
   }
-  print(head(suggestions[order(-score)], 10))
-  head(unique(suggestions[order(-score)]$word), 5)
+  #print(head(suggestions[order(-score)], 10))
+  head(unique(suggestions[order(-score)]$word), 3)
 }
 
 #load('grams_freqs')

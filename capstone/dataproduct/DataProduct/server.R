@@ -9,7 +9,20 @@
 
 library(shiny)
 library(tm)
+library(data.table)
 
+dt <- readRDS('data/dt.rds')
+
+stems <- function(w, maxStem) {
+    elems <- words(w)
+    l <- length(elems)
+    idx <- seq(0, min(maxStem-1, l-1)) # in case we have less than maxStem
+    vals <- list()
+    for (i in idx) {
+        vals[i+1] <- paste(elems[(l-i):l], collapse=' ')
+    }
+    vals
+}
 getSanitisedInput <- function(src) {
     docs <- VCorpus(VectorSource(c(src)))
     docs <- tm_map(docs, content_transformer(function(x) iconv(x, to='ASCII//TRANSLIT')))
@@ -63,7 +76,7 @@ shinyServer(function(input, output, session) {
        print(algo_output)
        updateSelectInput(session, 'suggestionDropDown', choices=algo_output$suggestions)
        output$processedInput <- if (sentence != '') {renderText(sentence)} else {renderText('Input is empty!')}
-       output$raw_data <- renderTable(algo_output$tbl)
+       output$raw_data <- renderTable(algo_output$tbl, digits=8)
        #updateTextInput(session, 'inText', value = paste(input$inText, 'foo'))
    })
 

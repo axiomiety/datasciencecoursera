@@ -1,0 +1,52 @@
+Capstone: Word prediction
+========================================================
+author: Pierre
+date: 2019-01-11
+autosize: true
+
+Problem statement
+========================================================
+
+Given a handful of words, we wish to predict
+
+Model
+========================================================
+
+The model used is the [Stupid Backoff](http://www.aclweb.org/anthology/D07-1090.pdf)
+
+Accuracy
+========================================================
+
+To assess the (in-sample) accuracy of our model, we sampled the original data files and looked at lines containing more than 3 words.
+
+Each sentence was:
+ - split at a random offset $i$
+ - $w_0:w_i$ were fed to the algorithm
+ - if $w_{i+1}$ was one of the 3 suggestions returned, this was classified as a match.
+ 
+Accuracy and Results
+========================================================
+
+Each sentence was:
+ - split at a random offset $i$
+ - $w_0:w_i$ were fed to the algorithm
+ - if $w_{i+1}$ was one of the 3 suggestions returned, this was classified as a match
+
+```{r, echo=FALSE, results='asis'}
+library(knitr)
+library(kableExtra)
+df2 <- data.frame(row.names=c('blogs','news','twitter','average'),
+                  RunA=c('26%','29%','28%','27%'),
+                  RunB=c('25%','26%','26%','26%'),
+                  RunC=c('26%','27%','28%','27%'))
+kable(df2) %>% kable_styling(position = "center")
+```
+
+Data Product
+========================================================
+
+https://axiomiety.shinyapps.io/DataProduct/
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics('./data_product_ss.jpg')
+```

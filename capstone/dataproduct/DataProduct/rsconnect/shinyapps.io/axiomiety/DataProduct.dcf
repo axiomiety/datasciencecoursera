@@ -1,0 +1,13 @@
+name: DataProduct
+title: DataProduct
+username:
+account: axiomiety
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 636335
+bundleId: 1807758
+url: https://axiomiety.shinyapps.io/DataProduct/
+when: 1547158952.18115
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: data/dt_no_na
